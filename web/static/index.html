@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TorchCoder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+    <header class="app-header">
+        <div class="brand">
+            <div class="brand-mark"><i class="ri-fire-fill"></i></div>
+            <div>
+                <div class="brand-title">TorchCoder</div>
+                <div class="brand-subtitle">PyTorch practice with account-based progress and resume</div>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <div class="guest-pill" id="guestNotice">
+                <i class="ri-door-lock-box-line"></i>
+                <span>Account required before you can open problems</span>
+            </div>
+
+            <button class="ghost-btn" id="progressBtn" type="button">
+                <i class="ri-bar-chart-box-line"></i>
+                <span>Progress</span>
+            </button>
+
+            <div class="progress-badge">
+                <i class="ri-trophy-line"></i>
+                <span><strong id="solvedCount">0</strong> / <span id="totalCount">0</span></span>
+            </div>
+
+            <button class="primary-btn" id="randomBtn" type="button">
+                <i class="ri-login-box-line"></i>
+                <span>Sign In to Start</span>
+            </button>
+
+            <div id="authControls" class="auth-controls"></div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="section-label">Table Of Contents</div>
+                <div class="filter-row">
+                    <button class="filter-btn active" data-filter="all" type="button">All</button>
+                    <button class="filter-btn" data-filter="todo" type="button">Todo</button>
+                    <button class="filter-btn" data-filter="attempted" type="button">Attempted</button>
+                    <button class="filter-btn" data-filter="solved" type="button">Solved</button>
+                </div>
+            </div>
+            <div class="task-list" id="taskList"></div>
+        </aside>
+
+        <main class="workspace-shell">
+            <div class="empty-state" id="emptyState">
+                <i class="ri-door-lock-box-line"></i>
+                <div class="empty-state-copy">
+                    <h2>Register or sign in to start practicing</h2>
+                    <p>This server only exposes problems, solutions, drafts, and submissions to authenticated users.</p>
+                </div>
+            </div>
+
+            <div class="problem-view hidden" id="problemView">
+                <div class="auth-banner hidden" id="authBanner">
+                    <div>
+                        <strong>Account required:</strong> sign in before you start so drafts, solved status, and your last opened problem stay tied to your account.
+                    </div>
+                    <button class="ghost-btn" id="authBannerBtn" type="button">
+                        <i class="ri-user-add-line"></i>
+                        <span>Create Account</span>
+                    </button>
+                </div>
+
+                <div class="workspace-layout" id="workspaceLayout">
+                    <section class="workspace-panel description-panel">
+                        <div class="panel-header">
+                            <div>
+                                <div class="section-label">Problem</div>
+                                <h1 class="panel-title" id="problemTitle">-</h1>
+                            </div>
+                            <div class="problem-meta">
+                                <span class="task-difficulty" id="problemDifficulty">-</span>
+                                <span class="function-chip" id="problemFunction">-</span>
+                            </div>
+                        </div>
+
+                        <div class="panel-scroll">
+                            <section class="detail-card hidden" id="signatureSection">
+                                <div class="detail-card-header">
+                                    <i class="ri-code-line"></i>
+                                    <span>Signature</span>
+                                </div>
+                                <pre class="mono-block" id="signatureCode"></pre>
+                            </section>
+
+                            <section class="detail-card hidden" id="exampleSection">
+                                <div class="detail-card-header detail-card-header-success">
+                                    <i class="ri-terminal-box-line"></i>
+                                    <span>Example</span>
+                                </div>
+                                <pre class="mono-block" id="exampleCode"></pre>
+                            </section>
+
+                            <section class="markdown-body" id="descriptionContent"></section>
+
+                            <section class="hint-card">
+                                <div class="detail-card-header detail-card-header-warn">
+                                    <i class="ri-lightbulb-line"></i>
+                                    <span>Hint</span>
+                                </div>
+                                <p id="hintContent"></p>
+                            </section>
+                        </div>
+                    </section>
+
+                    <section class="workspace-panel code-panel">
+                        <div class="panel-header">
+                            <div>
+                                <div class="section-label">Implementation</div>
+                                <div class="panel-title" id="editorTaskMeta">Start coding on the selected problem</div>
+                            </div>
+                            <div class="code-toolbar">
+                                <span class="status-pill" id="saveStatus">Select a task</span>
+                                <button class="ghost-btn" id="resetBtn" type="button">
+                                    <i class="ri-refresh-line"></i>
+                                    <span>Reset</span>
+                                </button>
+                                <button class="ghost-btn" id="hintBtn" type="button">
+                                    <i class="ri-lightbulb-line"></i>
+                                    <span>Hint</span>
+                                </button>
+                                <button class="ghost-btn" id="solutionToggleBtn" type="button" disabled>
+                                    <i class="ri-layout-right-2-line"></i>
+                                    <span>Show Solution</span>
+                                </button>
+                                <button class="primary-btn" id="runBtn" type="button">
+                                    <i class="ri-play-line"></i>
+                                    <span>Run Tests</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="editor-shell">
+                            <div id="editor"></div>
+                        </div>
+
+                        <section class="results-panel" id="resultsPanel">
+                            <div class="results-header">
+                                <div>
+                                    <div class="section-label">Judge Result</div>
+                                    <div class="results-title" id="resultsCount">-</div>
+                                </div>
+                                <div class="results-meta">
+                                    <span id="resultsTime">-</span>
+                                    <button class="icon-btn" id="closeResultsBtn" type="button" aria-label="Close results">
+                                        <i class="ri-close-line"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="results-list" id="resultsList"></div>
+                        </section>
+                    </section>
+
+                    <aside class="workspace-panel solution-panel" id="solutionPanel">
+                        <div class="panel-header">
+                            <div>
+                                <div class="section-label">Reference</div>
+                                <div class="panel-title">Solution</div>
+                            </div>
+                            <button class="icon-btn" id="closeSolutionBtn" type="button" aria-label="Hide solution">
+                                <i class="ri-close-line"></i>
+                            </button>
+                        </div>
+
+                        <div class="panel-scroll">
+                            <div class="solution-empty" id="solutionEmpty">
+                                <i class="ri-layout-right-line"></i>
+                                <p>The reference solution stays hidden until you choose to reveal it.</p>
+                            </div>
+                            <div class="loading-text hidden" id="solutionLoading">Loading solution...</div>
+                            <div class="solution-content hidden" id="solutionContent">
+                                <section class="markdown-body" id="solutionMarkdown"></section>
+                                <section class="detail-card">
+                                    <div class="detail-card-header">
+                                        <i class="ri-code-s-slash-line"></i>
+                                        <span>Reference Code</span>
+                                        <button class="icon-btn copy-btn" id="copySolutionBtn" type="button" aria-label="Copy solution code">
+                                            <i class="ri-file-copy-line"></i>
+                                        </button>
+                                    </div>
+                                    <pre class="mono-block solution-code" id="solutionCode"></pre>
+                                </section>
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="authModal">
+        <div class="modal auth-modal">
+            <div class="modal-header">
+                <div>
+                    <div class="section-label" id="authModalModeLabel">Account</div>
+                    <div class="modal-title" id="authModalTitle">Sign In</div>
+                </div>
+                <button class="icon-btn" id="authModalClose" type="button" aria-label="Close auth modal">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="tab-switch">
+                    <button class="tab-switch-btn active" data-auth-mode="login" type="button">Sign In</button>
+                    <button class="tab-switch-btn" data-auth-mode="register" type="button">Register</button>
+                </div>
+
+                <form class="auth-form" id="authForm">
+                    <label class="field-label" for="authUsername">Username</label>
+                    <input class="field-input" id="authUsername" name="username" maxlength="32" autocomplete="username" required>
+
+                    <label class="field-label" for="authPassword">Password</label>
+                    <input class="field-input" id="authPassword" name="password" type="password" minlength="8" autocomplete="current-password" required>
+
+                    <p class="form-help" id="authHelpText">Use your account to keep progress and drafts in sync across sessions.</p>
+                    <div class="form-error hidden" id="authError"></div>
+
+                    <button class="primary-btn auth-submit" id="authSubmitBtn" type="submit">
+                        <i class="ri-login-box-line"></i>
+                        <span>Sign In</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="progressModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div>
+                    <div class="section-label">Account Progress</div>
+                    <div class="modal-title">Progress Dashboard</div>
+                </div>
+                <button class="icon-btn" id="progressModalClose" type="button" aria-label="Close progress modal">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="progressContent"></div>
+        </div>
+    </div>
+
+    <div class="toast-host" id="toastHost"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    <script defer src="/static/app.js"></script>
+</body>
+</html>

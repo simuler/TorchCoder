@@ -1,0 +1,9 @@
+HOST ?= 0.0.0.0
+PORT ?= 8000
+DB_PATH ?= data/torchcoder.db
+SESSION_COOKIE_SECURE ?= false
+
+.PHONY: web
+
+web:
+	HOST=$(HOST) PORT=$(PORT) TORCHCODER_DB_PATH=$(DB_PATH) SESSION_COOKIE_SECURE=$(SESSION_COOKIE_SECURE) python start_web.py
