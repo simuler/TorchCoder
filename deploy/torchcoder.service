@@ -10,8 +10,8 @@ WorkingDirectory=/srv/torchcoder/app
 Environment=HOST=0.0.0.0
 Environment=PORT=8000
 Environment=TORCHCODER_DB_PATH=/srv/torchcoder/data/torchcoder.db
-Environment=PUBLIC_ORIGIN=https://simuler.cn
-Environment=SESSION_COOKIE_SECURE=true
+Environment=PUBLIC_ORIGIN=http://81.70.7.235:8000
+Environment=SESSION_COOKIE_SECURE=false
 ExecStart=/usr/bin/python /srv/torchcoder/app/start_web.py
 Restart=always
 RestartSec=3

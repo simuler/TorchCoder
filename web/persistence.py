@@ -80,13 +80,13 @@ def init_db() -> None:
 def _validate_username(username: str) -> str:
     cleaned = username.strip()
     if not USERNAME_PATTERN.fullmatch(cleaned):
-        raise ValueError("Username must be 3-32 characters using letters, numbers, ., _, or -.")
+        raise ValueError("用户名长度必须为 3 到 32 位，只能包含字母、数字、点号、下划线或短横线。")
     return cleaned
 
 
 def _validate_password(password: str) -> str:
     if len(password) < 8:
-        raise ValueError("Password must be at least 8 characters long.")
+        raise ValueError("密码长度至少需要 8 位。")
     return password
 
 
@@ -140,7 +140,7 @@ def create_user(username: str, password: str) -> dict[str, Any]:
                 (clean_username, _hash_password(password), created_at, created_at),
             )
         except sqlite3.IntegrityError as exc:
-            raise ValueError("Username is already taken.") from exc
+            raise ValueError("用户名已被占用。") from exc
 
         user_id = int(cursor.lastrowid)
         conn.execute(

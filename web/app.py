@@ -1,4 +1,4 @@
-"""FastAPI backend for the TorchCoder web interface."""
+"""TorchCoder 网页界面的 FastAPI 后端。"""
 
 from __future__ import annotations
 
@@ -27,6 +27,7 @@ from pydantic import BaseModel
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from torch_judge.tasks import get_task, list_tasks
+from web.localization import localize_task
 from web.persistence import (
     SESSION_TTL_DAYS,
     authenticate_user,
@@ -44,7 +45,7 @@ from web.persistence import (
     touch_task,
 )
 
-app = FastAPI(title="TorchCoder", description="PyTorch interview practice platform")
+app = FastAPI(title="TorchCoder", description="PyTorch 编程练习平台")
 
 STATIC_DIR = Path(__file__).parent / "static"
 STATIC_DIR.mkdir(exist_ok=True)
@@ -109,6 +110,30 @@ _TEMPLATE_MAP = _build_asset_map("templates")
 _SOLUTION_MAP = _build_asset_map("solutions", "_solution")
 
 
+def _get_task_locale(task_id: str, task: dict[str, Any] | None = None) -> dict[str, str]:
+    task = task or get_task(task_id) or {}
+    return localize_task(task_id, task)
+
+
+def _localize_template_code(code: str) -> str:
+    import re
+
+    replacements = {
+        "# ✏️ YOUR IMPLEMENTATION HERE": "# ✏️ 在这里编写你的实现",
+        "# TODO: implement": "# TODO: 在这里实现",
+        "pass  # Replace this": "pass  # 请在这里补全",
+    }
+    for source, target in replacements.items():
+        code = code.replace(source, target)
+
+    code = re.sub(r"pass\s+#\s+.+", "pass  # 请在这里补全", code)
+    return code
+
+
+def _localize_solution_code(code: str) -> str:
+    return code.replace("# ✅ SOLUTION", "# ✅ 参考实现")
+
+
 def _find_asset_path(task_id: str, asset_map: dict[str, Path]) -> Path | None:
     if task_id in asset_map:
         return asset_map[task_id]
@@ -162,6 +187,10 @@ def _extract_example_from_markdown(markdown: str) -> str:
 
 
 def _get_task_description(task_id: str) -> str:
+    task = get_task(task_id)
+    if task:
+        return _get_task_locale(task_id, task)["description"]
+
     template_path = _find_template_path(task_id)
 
     if template_path and template_path.exists():
@@ -177,9 +206,6 @@ def _get_task_description(task_id: str) -> str:
         except Exception:
             pass
 
-    task = get_task(task_id)
-    if task:
-        return f"Implement `{task['function_name']}` - {task['title']}"
     return ""
 
 
@@ -221,6 +247,9 @@ def _get_template_code(task_id: str) -> tuple[str, str, str]:
         except Exception:
             pass
 
+    if template_code:
+        template_code = _localize_template_code(template_code)
+
     if not template_code:
         task = get_task(task_id)
         if task:
@@ -229,7 +258,7 @@ def _get_template_code(task_id: str) -> tuple[str, str, str]:
                 template_code = (
                     f"class {function_name}:\n"
                     "    def __init__(self, ...):\n"
-                    "        # TODO: implement\n"
+                    "        # TODO: 在这里实现\n"
                     "        pass\n"
                 )
                 if not signature:
@@ -237,7 +266,7 @@ def _get_template_code(task_id: str) -> tuple[str, str, str]:
             else:
                 template_code = (
                     f"def {function_name}(...):\n"
-                    "    # TODO: implement\n"
+                    "    # TODO: 在这里实现\n"
                     "    pass\n"
                 )
                 if not signature:
@@ -273,15 +302,15 @@ def _get_solution(task_id: str) -> dict[str, str] | None:
             code_parts.append(stripped)
 
     return {
-        "markdown": "\n\n".join(markdown_parts),
-        "code": "\n\n".join(code_parts),
+        "markdown": _get_task_locale(task_id, get_task(task_id))["solution_markdown"],
+        "code": _localize_solution_code("\n\n".join(code_parts)),
     }
 
 
 def _run_tests(task_id: str, code: str) -> tuple[int, int, float, list[dict[str, Any]], str]:
     task = get_task(task_id)
     if not task:
-        return 0, 0, 0.0, [], "Task not found"
+        return 0, 0, 0.0, [], "题目不存在。"
 
     function_name = task["function_name"]
     tests = task["tests"]
@@ -302,12 +331,13 @@ def _run_tests(task_id: str, code: str) -> tuple[int, int, float, list[dict[str,
         with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
             exec(compile(code, "<user_code>", "exec"), namespace)
     except SyntaxError as exc:
-        return 0, len(tests), 0.0, [], f"Syntax Error: {exc}"
+        return 0, len(tests), 0.0, [], f"语法错误：{exc}"
     except Exception as exc:
-        return 0, len(tests), 0.0, [], f"Code execution error: {type(exc).__name__}: {exc}"
+        return 0, len(tests), 0.0, [], f"代码执行错误：{type(exc).__name__}: {exc}"
 
     if function_name not in namespace:
-        return 0, len(tests), 0.0, [], f"Function/class '{function_name}' not found in your code."
+        kind = "类" if function_name[:1].isupper() else "函数"
+        return 0, len(tests), 0.0, [], f"在你的代码中没有找到{kind} `{function_name}`。"
 
     user_fn = namespace[function_name]
     test_namespace = {**namespace, function_name: user_fn}
@@ -340,7 +370,7 @@ def _run_tests(task_id: str, code: str) -> tuple[int, int, float, list[dict[str,
                     "name": test["name"],
                     "passed": False,
                     "time": elapsed,
-                    "error": str(exc) or "Assertion failed",
+                    "error": str(exc) or "断言失败",
                 }
             )
         except Exception as exc:
@@ -410,9 +440,9 @@ async def get_required_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=(
-                "Session expired. Please sign in again."
+                "登录状态已过期，请重新登录。"
                 if session_token
-                else "Please sign in to use this feature."
+                else "请先登录后再使用此功能。"
             ),
         )
     return user
@@ -429,7 +459,7 @@ async def root() -> HTMLResponse:
     index_path = STATIC_DIR / "index.html"
     if index_path.exists():
         return HTMLResponse(content=index_path.read_text(encoding="utf-8"))
-    return HTMLResponse(content="<h1>TorchCoder</h1><p>Static files not found.</p>")
+    return HTMLResponse(content="<h1>TorchCoder</h1><p>未找到静态文件。</p>")
 
 
 @app.get("/api/auth/me")
@@ -447,9 +477,7 @@ async def register(
         user = create_user(payload.username, payload.password)
     except ValueError as exc:
         message = str(exc)
-        status_code = (
-            status.HTTP_409_CONFLICT if "taken" in message.lower() else status.HTTP_400_BAD_REQUEST
-        )
+        status_code = status.HTTP_409_CONFLICT if "占用" in message else status.HTTP_400_BAD_REQUEST
         raise HTTPException(status_code=status_code, detail=message) from exc
 
     delete_session(session_token)
@@ -468,7 +496,7 @@ async def login(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password.",
+            detail="用户名或密码错误。",
         )
 
     delete_session(session_token)
@@ -491,13 +519,15 @@ async def logout(
 async def get_tasks(_: dict[str, Any] = Depends(get_required_user)) -> dict[str, list[dict[str, Any]]]:
     tasks: list[dict[str, Any]] = []
     for task_id, task in list_tasks():
+        localized = _get_task_locale(task_id, task)
         tasks.append(
             {
                 "id": task_id,
-                "title": task["title"],
+                "title": localized["title"],
                 "difficulty": task["difficulty"],
+                "difficulty_label": localized["difficulty_label"],
                 "function_name": task["function_name"],
-                "category": task.get("category", ""),
+                "category": localized["category_label"],
             }
         )
     return {"tasks": tasks}
@@ -510,19 +540,21 @@ async def get_task_detail(
 ) -> dict[str, Any]:
     task = get_task(task_id)
     if not task:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="题目不存在。")
 
     touch_task(user["id"], task_id)
     task_state = get_task_state(user["id"], task_id)
+    localized = _get_task_locale(task_id, task)
 
     template, signature, example = _get_template_code(task_id)
     return {
         "id": task_id,
-        "title": task["title"],
+        "title": localized["title"],
         "difficulty": task["difficulty"],
-        "hint": task["hint"],
+        "difficulty_label": localized["difficulty_label"],
+        "hint": localized["hint"],
         "function_name": task["function_name"],
-        "description": _get_task_description(task_id),
+        "description": localized["description"],
         "template": template,
         "signature": signature,
         "example": example,
@@ -543,7 +575,7 @@ async def save_workspace(
     user: dict[str, Any] = Depends(get_required_user),
 ) -> dict[str, Any]:
     if not get_task(task_id):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="题目不存在。")
 
     saved_at = save_task_draft(user["id"], task_id, payload.code)
     return {"success": True, "saved_at": saved_at}
@@ -556,13 +588,13 @@ async def get_task_solution(
 ) -> dict[str, str]:
     task = get_task(task_id)
     if not task:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="题目不存在。")
 
     solution = _get_solution(task_id)
     if not solution:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Solution not available.",
+            detail="当前题目暂未提供题解。",
         )
 
     return {
@@ -587,13 +619,15 @@ async def get_random_task(
     ]
     pool = unsolved or tasks
     task_id, task = random.choice(pool)
+    localized = _get_task_locale(task_id, task)
 
     set_current_task(user["id"], task_id)
 
     return {
         "id": task_id,
-        "title": task["title"],
+        "title": localized["title"],
         "difficulty": task["difficulty"],
+        "difficulty_label": localized["difficulty_label"],
         "function_name": task["function_name"],
     }
 
@@ -607,13 +641,15 @@ async def get_progress(
 
     task_progress: list[dict[str, Any]] = []
     for task_id, task in tasks:
+        localized = _get_task_locale(task_id, task)
         entry = progress_map.get(task_id, {})
         draft_code = entry.get("draft_code")
         task_progress.append(
             {
                 "id": task_id,
-                "title": task["title"],
+                "title": localized["title"],
                 "difficulty": task["difficulty"],
+                "difficulty_label": localized["difficulty_label"],
                 "status": entry.get("status", "todo"),
                 "attempts": entry.get("attempts", 0),
                 "best_time": entry.get("best_time"),
@@ -639,7 +675,7 @@ async def submit_code(
 ) -> SubmitResponse:
     task = get_task(request.task_id)
     if not task:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="题目不存在。")
 
     passed, total, total_time, results, output = _run_tests(request.task_id, request.code)
 

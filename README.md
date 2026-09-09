@@ -1,20 +1,20 @@
 # TorchCoder
 
-**PyTorch 编程练习平台 — 涵盖 LLM、Diffusion、PEFT、RLHF 等方向**
+**PyTorch 编程练习平台 — 涵盖 LLM、扩散模型、PEFT、RLHF 等方向**
 
-*类似 LeetCode，但专注于张量运算。自托管，专注账号化 Web 刷题体验。即时自动评测，无需 GPU。*
+*类似 LeetCode，但专注于张量运算。自托管，专注账号化网页刷题体验。即时自动评测，无需 GPU。*
 
 [![PyTorch](https://img.shields.io/badge/PyTorch-ee4c2c?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org)
 [![Python](https://img.shields.io/badge/Python_3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
+[![许可证：MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
-![Problems](https://img.shields.io/badge/题目数-36-orange?style=flat-square)
-![GPU](https://img.shields.io/badge/GPU-无需-brightgreen?style=flat-square)
+![题目数](https://img.shields.io/badge/题目数-48-orange?style=flat-square)
+![GPU 需求](https://img.shields.io/badge/GPU-无需-brightgreen?style=flat-square)
 
 > **动态**
-> - 2026-03-16：感谢 [damaoooo](https://github.com/damaoooo) 报告题目资产匹配 Bug（attention 与 multihead_attention 冲突）。已将脆弱的后缀匹配替换为显式名称映射，彻底解决此类问题。
-> - 2026-03-12：Web 界面侧边栏新增题目分类展示（基础层、注意力机制、RLHF 等），支持折叠/展开，方便按专题刷题。
-> - 2026-03-10：感谢 [SongHuang1](https://github.com/SongHuang1) 贡献 MLP XOR 训练题目（纯 NumPy 手写前向+反向传播）。修复 Web 界面问题：class 类题目（LoRA、SwiGLU 等）现已正常工作，执行环境添加 `nn`/`F`/`numpy`/`math` 支持，修复 Windows 上 OpenMP 冲突导致的崩溃，修复 MHA 题解查找，前端增加 60 秒请求超时保护。
+> - 2026-03-16：感谢 [damaoooo](https://github.com/damaoooo) 报告题目资产匹配问题（attention 与 multihead_attention 冲突）。已将脆弱的后缀匹配替换为显式名称映射，彻底解决此类问题。
+> - 2026-03-12：网页界面侧边栏新增题目分类展示（基础层、注意力机制、RLHF 等），支持折叠/展开，方便按专题刷题。
+> - 2026-03-10：感谢 [SongHuang1](https://github.com/SongHuang1) 贡献 MLP XOR 训练题目（纯 NumPy 手写前向+反向传播）。修复网页界面问题：类题目（LoRA、SwiGLU 等）现已正常工作，执行环境添加 `nn`/`F`/`numpy`/`math` 支持，修复 Windows 上 OpenMP 冲突导致的崩溃，修复 MHA 题解查找，前端增加 60 秒请求超时保护。
 > - 2026-03-09：感谢 [chaoyitud](https://github.com/chaoyitud) 新增 ML 与 RLHF 练习题目，感谢 [fiberproduct](https://github.com/fiberproduct) 修复 `torch_judge/tasks/rope.py`。欢迎大家贡献更多题目！
 > - 2026-03-06：[浏览器插件](https://github.com/Rivflyyy/happytorch-plugin) 已发布。
 
@@ -28,13 +28,13 @@
 - 面试被要求从零实现 `softmax` 或 `MultiHeadAttention`，脑子一片空白
 - 想深入理解 Transformer、LoRA、Diffusion、RLHF，但缺乏系统性的动手练习
 
-**TorchCoder** 提供一个友好的实践环境，包含 **36 道精选题目**，从基础激活函数到完整 Transformer 组件和 RLHF 算法，帮助你循序渐进地提升。
+**TorchCoder** 提供一个友好的实践环境，包含 **48 道精选题目**，从基础激活函数到完整 Transformer 组件和 RLHF 算法，帮助你循序渐进地提升。
 
 | 特性 | 说明 |
 |------|------|
-| **36 道精选题目** | 从基础到进阶，覆盖主流深度学习技术栈 |
+| **48 道精选题目** | 从基础到进阶，覆盖主流深度学习技术栈 |
 | **自动评测** | 即时反馈，清晰展示每个测试用例的通过/失败状态 |
-| **Web 刷题界面** | LeetCode 风格的 Web 界面（Monaco 编辑器） |
+| **网页刷题界面** | LeetCode 风格的网页界面（Monaco 编辑器） |
 | **智能提示** | 卡住时给你思路，而非直接给答案 |
 | **参考题解** | 自己尝试后对照学习 |
 | **进度追踪** | 记录你的学习旅程 |
@@ -43,7 +43,7 @@
 
 ## 快速开始
 
-### 服务器 Web 部署
+### 服务器网页部署
 
 ```bash
 # 1. 创建并激活环境
@@ -63,7 +63,7 @@ export TORCHCODER_DB_PATH=/srv/torchcoder/data/torchcoder.db
 export PUBLIC_ORIGIN=https://simuler.cn
 export SESSION_COOKIE_SECURE=true
 
-# 4. 启动 Web 服务
+# 4. 启动网页服务
 python start_web.py
 ```
 
@@ -78,12 +78,11 @@ python start_web.py
 - 用户登录后会自动恢复上次打开的题目。
 - 未登录访客可以看到登录入口，但必须先注册或登录后才能打开题目、查看题解、保存草稿或提交代码。
 
-### Breaking 迁移提醒
+### 当前命名约定
 
-- 数据库路径环境变量已从 `HAPPYTORCH_DB_PATH` 改为 `TORCHCODER_DB_PATH`。
-- 默认数据库文件名已从 `data/happytorch.db` 改为 `data/torchcoder.db`。
-- 会话 Cookie 已从 `happytorch_session` 改为 `torchcoder_session`，升级后现有用户需要重新登录一次。
-- 如果你要沿用旧的 SQLite 数据文件，只需把 `TORCHCODER_DB_PATH` 指向原来的数据库路径，例如 `/srv/happytorch/data/happytorch.db`。
+- 数据库路径环境变量为 `TORCHCODER_DB_PATH`。
+- 默认数据库文件为 `data/torchcoder.db`。
+- 会话 Cookie 名称为 `torchcoder_session`。
 
 ### 用 Nginx 绑定 `simuler.cn`
 
@@ -128,14 +127,14 @@ sudo systemctl reload nginx
 
 ---
 
-## Web 模式
+## 网页模式
 
 类似 LeetCode 的练习界面，功能包括：
 
 - **Monaco 编辑器** — VS Code 同款编辑器，Python 语法高亮
 - **随机 / 顺序模式** — 随机抽取未解决的题目，或按顺序刷题
 - **即时测试** — 一键运行测试（`Ctrl+Enter`）
-- **题解栏目** — 查看参考实现，支持 Markdown 说明和一键复制代码
+- **题解栏目** — 查看参考实现，支持 Markdown 说明与一键复制代码
 - **进度面板** — 追踪已通过 / 已尝试 / 待完成状态
 - **暗色主题** — 现代化护眼界面
 
@@ -147,7 +146,7 @@ HOST=0.0.0.0 PORT=8000 python start_web.py
 # 浏览器打开 http://<服务器IP>:8000
 ```
 
-Web 端现在要求账号登录后才能开始刷题、查看题解、保存草稿和提交评测。
+网页端现在要求账号登录后才能开始刷题、查看题解、保存草稿和提交评测。
 
 ### Make 快捷命令
 
@@ -155,7 +154,7 @@ Web 端现在要求账号登录后才能开始刷题、查看题解、保存草�
 make web HOST=0.0.0.0 PORT=8000 DB_PATH=/srv/torchcoder/data/torchcoder.db
 ```
 
-### 本地 Web 调试
+### 本地网页调试
 
 ```bash
 HOST=127.0.0.1 PORT=8000 python start_web.py
@@ -164,7 +163,7 @@ HOST=127.0.0.1 PORT=8000 python start_web.py
 
 ---
 
-## 题目列表（共 36 题）
+## 题目列表（共 48 题）
 
 ### 基础层
 
@@ -256,13 +255,13 @@ HOST=127.0.0.1 PORT=8000 python start_web.py
 
 ## 使用方法
 
-### Web 练习流程
+### 网页练习流程
 
 ```
 1. 注册 / 登录账号                    →  进入受保护的刷题界面
 2. 选择题目                           →  阅读描述、签名和示例
 3. 在 Monaco 编辑器中实现代码         →  使用基础 PyTorch / NumPy 运算
-4. 点击 Run Tests                     →  查看逐测试用例的即时反馈
+4. 点击“运行测试”                     →  查看逐测试用例的即时反馈
 5. 自动保存草稿                       →  继续下一次会话
 6. 需要时展开题解                     →  对照参考实现学习
 ```
@@ -285,13 +284,13 @@ HOST=127.0.0.1 PORT=8000 python start_web.py
 
 ## 添加自定义题目
 
-TorchCoder 使用自动发现机制 — 只需在 `torch_judge/tasks/` 下新增文件：
+TorchCoder 使用自动发现机制，只需在 `torch_judge/tasks/` 下新增文件：
 
 ```python
 # torch_judge/tasks/my_task.py
 TASK = {
     "title": "我的自定义题目",
-    "difficulty": "Medium",       # Easy / Medium / Hard
+    "difficulty": "Medium",       # 难度可填 Easy / Medium / Hard
     "function_name": "my_function",
     "hint": "考虑一下广播机制...",
     "tests": [
@@ -300,7 +299,7 @@ TASK = {
 }
 ```
 
-无需手动注册，评测引擎会自动发现新题目。然后在 `templates/` 和 `solutions/` 中补充对应题目的仓库内资产，Web 端会直接读取这些文件，无需额外的本地准备步骤。
+无需手动注册，评测引擎会自动发现新题目。然后在 `templates/` 和 `solutions/` 中补充对应题目的仓库内资产，网页端会直接读取这些文件，无需额外的本地准备步骤。
 
 ---
 
@@ -321,7 +320,7 @@ TASK = {
 <details>
 <summary><b>进度可以保存吗？</b></summary>
 <br>
-Web 端会把账号、草稿、做题进度和上次打开的题目保存在 <code>TORCHCODER_DB_PATH</code> 指向的 SQLite 数据库中。如果你沿用旧数据库文件，只需把新的环境变量指向原路径即可。由于会话 Cookie 已从 <code>happytorch_session</code> 改为 <code>torchcoder_session</code>，升级后需要重新登录一次。
+网页端会把账号、草稿、做题进度和上次打开的题目保存在 <code>TORCHCODER_DB_PATH</code> 指向的 SQLite 数据库中。当前默认文件名为 <code>data/torchcoder.db</code>，会话 Cookie 名称为 <code>torchcoder_session</code>。
 </details>
 
 <details>
@@ -334,23 +333,23 @@ TorchCoder 基于 <a href="https://github.com/duoan/TorchCode">TorchCode</a>（1
 
 ## 致谢
 
-本项目基于 [@duoan](https://github.com/duoan) 的 [TorchCode](https://github.com/duoan/TorchCode)。如果你觉得本项目有帮助，也请给[原项目](https://github.com/duoan/TorchCode)一个 Star。
+本项目基于 [@duoan](https://github.com/duoan) 的 [TorchCode](https://github.com/duoan/TorchCode)。如果你觉得本项目有帮助，也请给[原项目](https://github.com/duoan/TorchCode)点个星标。
 
 社区贡献者：
 - [chaoyitud](https://github.com/chaoyitud) — ML 基础和 RLHF 练习题目
 - [fiberproduct](https://github.com/fiberproduct) — RoPE 题目修复
 - [Rivflyyy](https://github.com/Rivflyyy) — [浏览器插件](https://github.com/Rivflyyy/happytorch-plugin)
 - [SongHuang1](https://github.com/SongHuang1) — MLP XOR 训练题目
-- [damaoooo](https://github.com/damaoooo) — 题目资产匹配 Bug 修复
+- [damaoooo](https://github.com/damaoooo) — 题目资产匹配问题修复
 
 ## 许可证
 
-MIT License — 详见 [LICENSE](LICENSE)。
+MIT 许可证，详见 [LICENSE](LICENSE)。
 
 ---
 
 <div align="center">
 
-**如果觉得有用，欢迎点个 Star。**
+**如果觉得有用，欢迎点个星标。**
 
 </div>

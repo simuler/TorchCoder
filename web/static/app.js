@@ -1,5 +1,15 @@
 const API_BASE = window.location.origin;
-const DEFAULT_EDITOR_TEXT = "# Select a task to start coding.\n";
+const DEFAULT_EDITOR_TEXT = "# 请选择一道题目开始编码。\n";
+const DIFFICULTY_LABELS = {
+    Easy: "简单",
+    Medium: "中等",
+    Hard: "困难",
+};
+const STATUS_LABELS = {
+    todo: "未开始",
+    attempted: "已尝试",
+    solved: "已完成",
+};
 
 const state = {
     auth: {
@@ -66,6 +76,7 @@ const ui = {
     solutionEmpty: document.getElementById("solutionEmpty"),
     solutionLoading: document.getElementById("solutionLoading"),
     solutionMarkdown: document.getElementById("solutionMarkdown"),
+    solutionModal: document.getElementById("solutionModal"),
     solutionPanel: document.getElementById("solutionPanel"),
     solutionToggleBtn: document.getElementById("solutionToggleBtn"),
     solvedCount: document.getElementById("solvedCount"),
@@ -110,11 +121,19 @@ function formatDuration(seconds) {
     if (!seconds && seconds !== 0) {
         return "";
     }
-    return `${(seconds * 1000).toFixed(1)} ms`;
+    return `${(seconds * 1000).toFixed(1)} 毫秒`;
+}
+
+function formatDifficultyLabel(difficulty) {
+    return DIFFICULTY_LABELS[difficulty] || difficulty || "";
+}
+
+function formatStatusLabel(status) {
+    return STATUS_LABELS[status] || status || "";
 }
 
 function renderMarkdown(target, markdown) {
-    target.innerHTML = markdown ? marked.parse(markdown) : "<p>No content available.</p>";
+    target.innerHTML = markdown ? marked.parse(markdown) : "<p>暂无内容。</p>";
     if (window.renderMathInElement) {
         window.renderMathInElement(target, {
             delimiters: [
@@ -155,7 +174,7 @@ async function apiFetch(path, options = {}) {
     if (!response.ok) {
         const detail =
             (payload && typeof payload === "object" && payload.detail) ||
-            "Request failed.";
+            "请求失败。";
         const error = new Error(detail);
         error.status = response.status;
         error.payload = payload;
@@ -184,14 +203,14 @@ function setAuthMode(mode) {
     });
 
     const isRegister = mode === "register";
-    ui.authModalModeLabel.textContent = isRegister ? "Create Account" : "Account";
-    ui.authModalTitle.textContent = isRegister ? "Register" : "Sign In";
+    ui.authModalModeLabel.textContent = isRegister ? "注册账号" : "账号";
+    ui.authModalTitle.textContent = isRegister ? "注册" : "登录";
     ui.authHelpText.textContent = isRegister
-        ? "Usernames use letters, numbers, ., _, or -. Passwords need at least 8 characters."
-        : "Sign in to resume your latest problem and restore saved drafts.";
+        ? "用户名可使用字母、数字、点号、下划线或短横线，密码至少 8 位。"
+        : "登录后可恢复上次打开的题目，并找回已保存的草稿。";
     ui.authSubmitBtn.innerHTML = isRegister
-        ? '<i class="ri-user-add-line"></i><span>Register</span>'
-        : '<i class="ri-login-box-line"></i><span>Sign In</span>';
+        ? '<i class="ri-user-add-line"></i><span>注册</span>'
+        : '<i class="ri-login-box-line"></i><span>登录</span>';
     ui.authPassword.autocomplete = isRegister ? "new-password" : "current-password";
 }
 
@@ -233,8 +252,8 @@ function renderWorkspaceState() {
         ui.emptyState.innerHTML = `
             <i class="ri-layout-masonry-line"></i>
             <div class="empty-state-copy">
-                <h2>Select a task</h2>
-                <p>Choose a problem from the sidebar or use Random to reopen your account-backed workspace.</p>
+                <h2>请选择题目</h2>
+                <p>可以从侧边栏挑选题目，或使用“随机一题”继续你的账号练习空间。</p>
             </div>
         `;
         return;
@@ -243,17 +262,17 @@ function renderWorkspaceState() {
     ui.emptyState.innerHTML = `
         <i class="ri-door-lock-box-line"></i>
         <div class="empty-state-copy">
-            <h2>Register or sign in to start practicing</h2>
-            <p>This server only exposes problems, solutions, drafts, and submissions to authenticated users.</p>
+            <h2>注册或登录后开始练习</h2>
+            <p>当前站点仅向已登录用户开放题目、题解、草稿和提交功能。</p>
         </div>
         <div class="empty-state-actions">
             <button class="primary-btn" type="button" data-open-auth="register">
                 <i class="ri-user-add-line"></i>
-                <span>Create Account</span>
+                <span>注册账号</span>
             </button>
             <button class="ghost-btn" type="button" data-open-auth="login">
                 <i class="ri-login-box-line"></i>
-                <span>Sign In</span>
+                <span>登录</span>
             </button>
         </div>
     `;
@@ -290,7 +309,7 @@ function applySignedOutState({
     renderAuthControls();
     renderTaskList();
     renderWorkspaceState();
-    updateSaveStatus("Register or sign in to start practicing", "warning");
+    updateSaveStatus("注册或登录后开始练习", "warning");
 
     if (toastMessage) {
         showToast(toastMessage, "warning", 3600);
@@ -309,7 +328,7 @@ function handleAuthError(error, options = {}) {
         preservePendingAuth: options.preservePendingAuth ?? true,
         openAuth: true,
         authMode: options.authMode || "login",
-        toastMessage: options.toastMessage || error.message || "Please sign in to continue.",
+        toastMessage: options.toastMessage || error.message || "请先登录后继续。",
     });
     return true;
 }
@@ -332,8 +351,8 @@ function renderAuthControls() {
         button.disabled = !state.auth.authenticated;
     });
     ui.randomBtn.innerHTML = state.auth.authenticated
-        ? '<i class="ri-shuffle-line"></i><span>Random</span>'
-        : '<i class="ri-login-box-line"></i><span>Sign In to Start</span>';
+        ? '<i class="ri-shuffle-line"></i><span>随机一题</span>'
+        : '<i class="ri-login-box-line"></i><span>登录后开始</span>';
 
     if (state.auth.authenticated) {
         ui.authControls.innerHTML = `
@@ -343,7 +362,7 @@ function renderAuthControls() {
             </div>
             <button class="ghost-btn" id="logoutBtn" type="button">
                 <i class="ri-logout-box-r-line"></i>
-                <span>Logout</span>
+                <span>退出登录</span>
             </button>
         `;
         document.getElementById("logoutBtn").addEventListener("click", logout);
@@ -351,11 +370,11 @@ function renderAuthControls() {
         ui.authControls.innerHTML = `
             <button class="ghost-btn" id="loginBtn" type="button">
                 <i class="ri-login-box-line"></i>
-                <span>Sign In</span>
+                <span>登录</span>
             </button>
             <button class="ghost-btn" id="registerBtn" type="button">
                 <i class="ri-user-add-line"></i>
-                <span>Register</span>
+                <span>注册</span>
             </button>
         `;
         document.getElementById("loginBtn").addEventListener("click", () => openAuthModal("login"));
@@ -370,17 +389,17 @@ function renderTaskList() {
     if (!state.auth.authenticated) {
         ui.taskList.innerHTML = `
             <div class="task-gate-card">
-                <div class="section-label">Account Required</div>
-                <h3>Unlock the problem set</h3>
-                <p>Register or sign in before you browse tasks, reveal solutions, save drafts, or submit code on this server.</p>
+                <div class="section-label">需要登录</div>
+                <h3>登录后解锁题库</h3>
+                <p>在这个站点上，浏览题目、查看题解、保存草稿和提交代码都需要先登录。</p>
                 <div class="task-gate-actions">
                     <button class="primary-btn" type="button" data-open-auth="register">
                         <i class="ri-user-add-line"></i>
-                        <span>Create Account</span>
+                        <span>注册账号</span>
                     </button>
                     <button class="ghost-btn" type="button" data-open-auth="login">
                         <i class="ri-login-box-line"></i>
-                        <span>Sign In</span>
+                        <span>登录</span>
                     </button>
                 </div>
             </div>
@@ -399,7 +418,7 @@ function renderTaskList() {
 
     const groups = new Map();
     filteredTasks.forEach((task) => {
-        const category = task.category || "Uncategorized";
+        const category = task.category || "未分类";
         if (!groups.has(category)) {
             groups.set(category, []);
         }
@@ -421,31 +440,31 @@ function renderTaskList() {
                               : '<i class="ri-checkbox-blank-circle-line"></i>';
                     const statusLabel =
                         progress.status === "solved"
-                            ? "Solved"
+                            ? "已完成"
                             : progress.status === "attempted"
-                              ? "Attempted"
-                              : "Todo";
+                              ? "已尝试"
+                              : "未开始";
                     const extra = [];
                     if (progress.attempts) {
-                        extra.push(`${progress.attempts} attempt${progress.attempts > 1 ? "s" : ""}`);
+                        extra.push(`尝试 ${progress.attempts} 次`);
                     }
                     if (progress.has_draft) {
-                        extra.push("draft saved");
+                        extra.push("已保存草稿");
                     }
                     if (progress.best_time) {
-                        extra.push(`best ${formatDuration(progress.best_time)}`);
+                        extra.push(`最佳 ${formatDuration(progress.best_time)}`);
                     }
 
                     return `
                         <div class="task-item ${isActive ? "active" : ""}" data-task-id="${task.id}">
                             <div class="task-item-head">
                                 <span class="task-id">${task.id}</span>
-                                <span class="task-difficulty ${task.difficulty}">${task.difficulty}</span>
+                                <span class="task-difficulty ${task.difficulty}">${escapeHtml(task.difficulty_label || formatDifficultyLabel(task.difficulty))}</span>
                             </div>
                             <div class="task-title">${escapeHtml(task.title)}</div>
                             <div class="task-item-status">
                                 <span>${statusIcon}${statusLabel}</span>
-                                <span>${escapeHtml(extra.join(" | ") || "not started")}</span>
+                                <span>${escapeHtml(extra.join(" | ") || "尚未开始")}</span>
                             </div>
                         </div>
                     `;
@@ -535,11 +554,11 @@ function selectTask(task) {
     renderAuthControls();
 
     ui.problemTitle.textContent = task.title;
-    ui.problemDifficulty.textContent = task.difficulty;
+    ui.problemDifficulty.textContent = task.difficulty_label || formatDifficultyLabel(task.difficulty);
     ui.problemDifficulty.className = `task-difficulty ${task.difficulty}`;
     ui.problemFunction.textContent = task.function_name;
     ui.editorTaskMeta.textContent = `${task.id} | ${task.function_name}`;
-    ui.hintContent.textContent = task.hint || "No hint available.";
+    ui.hintContent.textContent = task.hint || "暂无提示。";
 
     if (task.signature) {
         ui.signatureCode.textContent = task.signature;
@@ -555,21 +574,21 @@ function selectTask(task) {
         ui.exampleSection.classList.add("hidden");
     }
 
-    renderMarkdown(ui.descriptionContent, task.description || "No description available.");
+    renderMarkdown(ui.descriptionContent, task.description || "暂无题目说明。");
     setEditorValue(task.saved_code ?? task.template ?? DEFAULT_EDITOR_TEXT);
 
     if (task.saved_at) {
-        updateSaveStatus(`Saved ${formatClock(task.saved_at)}`, "success");
+        updateSaveStatus(`已保存 ${formatClock(task.saved_at)}`, "success");
     } else if (state.auth.authenticated) {
-        updateSaveStatus("Autosave ready", "pending");
+        updateSaveStatus("自动保存已就绪", "pending");
     } else {
-        updateSaveStatus("Sign in to save progress", "warning");
+        updateSaveStatus("登录后可保存进度", "warning");
     }
 
     ui.solutionToggleBtn.disabled = !task.has_solution;
     ui.solutionToggleBtn.innerHTML = task.has_solution
-        ? '<i class="ri-layout-right-2-line"></i><span>Show Solution</span>'
-        : '<i class="ri-lock-2-line"></i><span>No Solution</span>';
+        ? '<i class="ri-book-open-line"></i><span>参考题解</span>'
+        : '<i class="ri-lock-2-line"></i><span>暂无题解</span>';
     hideSolutionPanel();
     hideResults();
     renderTaskList();
@@ -589,7 +608,7 @@ async function loadTask(taskId) {
         if (handleAuthError(error, { preservePendingAuth: true, authMode: "login" })) {
             return;
         }
-        showToast(error.message || "Failed to load task.", "error");
+        showToast(error.message || "加载题目失败。", "error");
     }
 }
 
@@ -606,7 +625,7 @@ async function getRandomTask() {
         if (handleAuthError(error, { preservePendingAuth: false, authMode: "login" })) {
             return;
         }
-        showToast(error.message || "Failed to pick a random task.", "error");
+        showToast(error.message || "随机选题失败。", "error");
     }
 }
 
@@ -615,11 +634,11 @@ function handleEditorChange() {
         return;
     }
     if (!state.auth.authenticated) {
-        updateSaveStatus("Register or sign in to start practicing", "warning");
+        updateSaveStatus("注册或登录后开始练习", "warning");
         return;
     }
 
-    updateSaveStatus("Unsaved changes", "pending");
+    updateSaveStatus("有未保存的修改", "pending");
     clearTimeout(state.autosaveTimer);
     state.autosaveTimer = setTimeout(() => {
         saveWorkspace();
@@ -631,7 +650,7 @@ async function saveWorkspace(codeOverride = null, { quiet = true } = {}) {
         return false;
     }
 
-    updateSaveStatus("Saving...", "pending");
+    updateSaveStatus("保存中...", "pending");
 
     try {
         const payload = await apiFetch(`/api/tasks/${state.currentTask.id}/workspace`, {
@@ -648,7 +667,7 @@ async function saveWorkspace(codeOverride = null, { quiet = true } = {}) {
             has_draft: Boolean(code.trim()),
             draft_updated_at: payload.saved_at,
         };
-        updateSaveStatus(`Saved ${formatClock(payload.saved_at)}`, "success");
+        updateSaveStatus(`已保存 ${formatClock(payload.saved_at)}`, "success");
         renderTaskList();
         return true;
     } catch (error) {
@@ -656,9 +675,9 @@ async function saveWorkspace(codeOverride = null, { quiet = true } = {}) {
             return false;
         }
 
-        updateSaveStatus("Save failed", "error");
+        updateSaveStatus("保存失败", "error");
         if (!quiet) {
-            showToast(error.message || "Autosave failed.", "error");
+            showToast(error.message || "自动保存失败。", "error");
         }
         return false;
     }
@@ -671,7 +690,7 @@ async function submitCode() {
 
     clearTimeout(state.autosaveTimer);
     ui.runBtn.disabled = true;
-    ui.runBtn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i><span>Running</span>';
+    ui.runBtn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i><span>运行中</span>';
 
     try {
         const result = await apiFetch("/api/submit", {
@@ -684,26 +703,26 @@ async function submitCode() {
 
         showResults(result);
         await loadProgress();
-        updateSaveStatus("Saved with latest run", "success");
+        updateSaveStatus("已保存本次运行结果", "success");
 
         showToast(
-            result.success ? "All tests passed." : `${result.passed}/${result.total} tests passed.`,
+            result.success ? "全部测试通过。" : `已通过 ${result.passed}/${result.total} 个测试。`,
             result.success ? "success" : "warning",
         );
     } catch (error) {
         if (handleAuthError(error, { preservePendingAuth: true, authMode: "login" })) {
             return;
         }
-        showToast(error.message || "Submit failed.", "error");
+        showToast(error.message || "提交失败。", "error");
     } finally {
         ui.runBtn.disabled = false;
-        ui.runBtn.innerHTML = '<i class="ri-play-line"></i><span>Run Tests</span>';
+        ui.runBtn.innerHTML = '<i class="ri-play-line"></i><span>运行测试</span>';
     }
 }
 
 function showResults(result) {
-    ui.resultsCount.textContent = `${result.passed}/${result.total} tests passed`;
-    ui.resultsTime.textContent = `Total ${formatDuration(result.total_time)}`;
+    ui.resultsCount.textContent = `已通过 ${result.passed}/${result.total} 个测试`;
+    ui.resultsTime.textContent = `总耗时 ${formatDuration(result.total_time)}`;
     ui.resultsList.innerHTML = result.results
         .map((entry, index) => {
             const rowClass = entry.passed ? "pass" : "fail";
@@ -713,7 +732,7 @@ function showResults(result) {
                     <div class="result-main">
                         <div class="result-name">
                             <i class="${iconClass}"></i>
-                            <span>Test ${index + 1}: ${escapeHtml(entry.name)}</span>
+                            <span>测试 ${index + 1}：${escapeHtml(entry.name)}</span>
                         </div>
                         <span class="result-time">${formatDuration(entry.time)}</span>
                     </div>
@@ -737,7 +756,7 @@ function resetCode() {
     if (state.auth.authenticated) {
         saveWorkspace(state.currentTask.template || "", { quiet: false });
     } else {
-        updateSaveStatus("Reset locally", "warning");
+        updateSaveStatus("已在本地重置", "warning");
     }
 }
 
@@ -745,14 +764,14 @@ function showHint() {
     if (!state.currentTask) {
         return;
     }
-    showToast(state.currentTask.hint || "No hint available.", "info", 4500);
+    showToast(state.currentTask.hint || "暂无提示。", "info", 4500);
 }
 
 function hideSolutionPanel() {
-    ui.workspaceLayout.classList.remove("solution-open");
+    ui.solutionModal.classList.remove("show");
     ui.solutionToggleBtn.innerHTML = state.currentTask?.has_solution
-        ? '<i class="ri-layout-right-2-line"></i><span>Show Solution</span>'
-        : '<i class="ri-lock-2-line"></i><span>No Solution</span>';
+        ? '<i class="ri-book-open-line"></i><span>参考题解</span>'
+        : '<i class="ri-lock-2-line"></i><span>暂无题解</span>';
 }
 
 async function toggleSolutionPanel() {
@@ -760,14 +779,14 @@ async function toggleSolutionPanel() {
         return;
     }
 
-    const willOpen = !ui.workspaceLayout.classList.contains("solution-open");
+    const willOpen = !ui.solutionModal.classList.contains("show");
     if (!willOpen) {
         hideSolutionPanel();
         return;
     }
 
-    ui.workspaceLayout.classList.add("solution-open");
-    ui.solutionToggleBtn.innerHTML = '<i class="ri-layout-right-line"></i><span>Hide Solution</span>';
+    ui.solutionModal.classList.add("show");
+    ui.solutionToggleBtn.innerHTML = '<i class="ri-book-open-line"></i><span>关闭题解</span>';
 
     if (!state.currentTask.solutionLoaded) {
         await loadSolution(state.currentTask.id);
@@ -786,7 +805,7 @@ async function loadSolution(taskId) {
         }
         state.currentTask.solutionLoaded = true;
         state.currentTask.solutionMarkdown = data.markdown || "";
-        state.currentTask.solutionCode = data.code || "# No solution code";
+        state.currentTask.solutionCode = data.code || "# 暂无题解代码";
         renderMarkdown(ui.solutionMarkdown, state.currentTask.solutionMarkdown);
         ui.solutionCode.textContent = state.currentTask.solutionCode;
         ui.solutionContent.classList.remove("hidden");
@@ -798,7 +817,7 @@ async function loadSolution(taskId) {
         ui.solutionEmpty.classList.remove("hidden");
         ui.solutionEmpty.innerHTML = `
             <i class="ri-error-warning-line"></i>
-            <p>${escapeHtml(error.message || "Failed to load the reference solution.")}</p>
+            <p>${escapeHtml(error.message || "加载参考题解失败。")}</p>
         `;
     } finally {
         ui.solutionLoading.classList.add("hidden");
@@ -808,9 +827,9 @@ async function loadSolution(taskId) {
 async function copySolutionCode() {
     try {
         await navigator.clipboard.writeText(ui.solutionCode.textContent || "");
-        showToast("Solution code copied.", "success");
+        showToast("题解代码已复制。", "success");
     } catch {
-        showToast("Copy failed.", "error");
+        showToast("复制失败。", "error");
     }
 }
 
@@ -818,16 +837,16 @@ function showProgressModal() {
     if (!state.auth.authenticated) {
         ui.progressContent.innerHTML = `
             <p style="margin-bottom: 16px; color: var(--text-secondary);">
-                This server keeps the full practice workflow behind an account. Sign in or register to unlock tasks, drafts, and progress sync.
+                当前站点的完整练习流程基于账号提供。登录或注册后即可解锁题目、草稿与进度同步。
             </p>
             <div class="task-gate-actions">
                 <button class="primary-btn" id="progressRegisterBtn" type="button">
                     <i class="ri-user-add-line"></i>
-                    <span>Create Account</span>
+                    <span>注册账号</span>
                 </button>
                 <button class="ghost-btn" id="progressLoginBtn" type="button">
                     <i class="ri-login-box-line"></i>
-                    <span>Sign In</span>
+                    <span>登录</span>
                 </button>
             </div>
         `;
@@ -853,19 +872,19 @@ function showProgressModal() {
         <div class="progress-summary">
             <div class="summary-card">
                 <div class="summary-value">${solved}</div>
-                <div class="summary-label">Solved</div>
+                <div class="summary-label">已完成</div>
             </div>
             <div class="summary-card">
                 <div class="summary-value">${attempted}</div>
-                <div class="summary-label">Attempted</div>
+                <div class="summary-label">已尝试</div>
             </div>
             <div class="summary-card">
                 <div class="summary-value">${drafts}</div>
-                <div class="summary-label">Drafts Saved</div>
+                <div class="summary-label">草稿数</div>
             </div>
             <div class="summary-card">
                 <div class="summary-value">${total}</div>
-                <div class="summary-label">Total Problems</div>
+                <div class="summary-label">题目总数</div>
             </div>
         </div>
         <div class="progress-list">
@@ -873,15 +892,15 @@ function showProgressModal() {
                 .map((task) => {
                     const entry = getTaskProgress(task.id);
                     const meta = [];
-                    meta.push(entry.status);
+                    meta.push(formatStatusLabel(entry.status));
                     if (entry.attempts) {
-                        meta.push(`${entry.attempts} attempts`);
+                        meta.push(`尝试 ${entry.attempts} 次`);
                     }
                     if (entry.best_time) {
-                        meta.push(`best ${formatDuration(entry.best_time)}`);
+                        meta.push(`最佳 ${formatDuration(entry.best_time)}`);
                     }
                     if (entry.draft_updated_at) {
-                        meta.push(`draft ${formatClock(entry.draft_updated_at)}`);
+                        meta.push(`草稿 ${formatClock(entry.draft_updated_at)}`);
                     }
                     return `
                         <div class="progress-item">
@@ -889,10 +908,10 @@ function showProgressModal() {
                                 <div>${escapeHtml(task.title)}</div>
                                 <div class="progress-item-meta">${escapeHtml(meta.join(" | "))}</div>
                             </div>
-                            <span class="task-difficulty ${task.difficulty}">${task.difficulty}</span>
+                            <span class="task-difficulty ${task.difficulty}">${escapeHtml(task.difficulty_label || formatDifficultyLabel(task.difficulty))}</span>
                             <button class="ghost-btn" type="button" data-resume-task="${task.id}">
                                 <i class="ri-arrow-right-up-line"></i>
-                                <span>Open</span>
+                                <span>打开</span>
                             </button>
                         </div>
                     `;
@@ -902,7 +921,7 @@ function showProgressModal() {
         <div class="progress-modal-actions">
             <button class="ghost-btn" id="resetProgressBtn" type="button">
                 <i class="ri-delete-bin-6-line"></i>
-                <span>Reset My Progress</span>
+                <span>重置我的进度</span>
             </button>
         </div>
     `;
@@ -921,7 +940,7 @@ function showProgressModal() {
 
 async function resetProgress() {
     const confirmed = window.confirm(
-        "Reset all saved progress and drafts for your account? This cannot be undone.",
+        "要重置当前账号的全部进度和草稿吗？此操作无法撤销。",
     );
     if (!confirmed) {
         return;
@@ -934,13 +953,13 @@ async function resetProgress() {
         if (state.currentTask) {
             await loadTask(state.currentTask.id);
         }
-        showToast("Account progress reset.", "success");
+        showToast("账号进度已重置。", "success");
     } catch (error) {
         if (handleAuthError(error, { preservePendingAuth: true, authMode: "login" })) {
             ui.progressModal.classList.remove("show");
             return;
         }
-        showToast(error.message || "Failed to reset progress.", "error");
+        showToast(error.message || "重置进度失败。", "error");
     }
 }
 
@@ -997,12 +1016,12 @@ async function handleAuthSubmit(event) {
 
         showToast(
             state.authMode === "register"
-                ? "Account created. Autosave is now enabled."
-                : "Signed in successfully.",
+                ? "账号创建成功，自动保存已启用。"
+                : "登录成功。",
             "success",
         );
     } catch (error) {
-        ui.authError.textContent = error.message || "Authentication failed.";
+        ui.authError.textContent = error.message || "认证失败。";
         ui.authError.classList.remove("hidden");
     } finally {
         ui.authSubmitBtn.disabled = false;
@@ -1014,9 +1033,9 @@ async function logout() {
         await apiFetch("/api/auth/logout", { method: "POST" });
         ui.progressModal.classList.remove("show");
         applySignedOutState();
-        showToast("Signed out.", "success");
+        showToast("已退出登录。", "success");
     } catch (error) {
-        showToast(error.message || "Logout failed.", "error");
+        showToast(error.message || "退出登录失败。", "error");
     }
 }
 
@@ -1067,6 +1086,12 @@ function bindStaticEvents() {
             hideProgressModal();
         }
     });
+
+    ui.solutionModal.addEventListener("click", (event) => {
+        if (event.target === ui.solutionModal) {
+            hideSolutionPanel();
+        }
+    });
 }
 
 function initEditor() {
@@ -1075,30 +1100,30 @@ function initEditor() {
     });
 
     window.require(["vs/editor/editor.main"], () => {
-        monaco.editor.defineTheme("torchcoder-night", {
-            base: "vs-dark",
+        monaco.editor.defineTheme("torchcoder-ivory", {
+            base: "vs",
             inherit: true,
             rules: [
-                { token: "comment", foreground: "7f8ba3" },
-                { token: "keyword", foreground: "76c6ff" },
-                { token: "string", foreground: "f9d47c" },
-                { token: "number", foreground: "78f1b5" },
+                { token: "comment", foreground: "6b6257" },
+                { token: "keyword", foreground: "4d329f" },
+                { token: "string", foreground: "8b5d16" },
+                { token: "number", foreground: "167653" },
             ],
             colors: {
-                "editor.background": "#11182b",
-                "editor.foreground": "#f4f7fb",
-                "editorLineNumber.foreground": "#6f7e99",
-                "editorLineNumber.activeForeground": "#f4f7fb",
-                "editorCursor.foreground": "#53b7ff",
-                "editor.selectionBackground": "#20395d",
-                "editor.lineHighlightBackground": "#18233a",
+                "editor.background": "#fffdf8",
+                "editor.foreground": "#171512",
+                "editorLineNumber.foreground": "#8c8275",
+                "editorLineNumber.activeForeground": "#171512",
+                "editorCursor.foreground": "#6e50c8",
+                "editor.selectionBackground": "#ded4f7",
+                "editor.lineHighlightBackground": "#f7f1e7",
             },
         });
 
         state.editor = monaco.editor.create(document.getElementById("editor"), {
             value: DEFAULT_EDITOR_TEXT,
             language: "python",
-            theme: "torchcoder-night",
+            theme: "torchcoder-ivory",
             automaticLayout: true,
             fontFamily: "'JetBrains Mono', monospace",
             fontSize: 14,
@@ -1113,7 +1138,7 @@ function initEditor() {
         state.editor.onDidChangeModelContent(handleEditorChange);
         bootstrap().catch((error) => {
             console.error(error);
-            showToast("Failed to initialize the app.", "error");
+            showToast("应用初始化失败。", "error");
         });
     });
 }

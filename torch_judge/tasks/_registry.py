@@ -17,6 +17,7 @@ CATEGORY_ORDER = [
     "参数高效微调",
     "条件调制 — Diffusion",
     "LLM 推理组件",
+    "Diffusion",
     "扩散模型训练",
     "ML 基础与解码策略",
     "RLHF",

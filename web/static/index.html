@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/styles.css?v=20260904-ivory-layout">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
@@ -20,19 +20,19 @@
             <div class="brand-mark"><i class="ri-fire-fill"></i></div>
             <div>
                 <div class="brand-title">TorchCoder</div>
-                <div class="brand-subtitle">PyTorch practice with account-based progress and resume</div>
+                <div class="brand-subtitle">面向 PyTorch 的账号化练习平台，支持进度保存与断点续练</div>
             </div>
         </div>
 
         <div class="header-actions">
             <div class="guest-pill" id="guestNotice">
                 <i class="ri-door-lock-box-line"></i>
-                <span>Account required before you can open problems</span>
+                <span>登录后才能打开题目</span>
             </div>
 
             <button class="ghost-btn" id="progressBtn" type="button">
                 <i class="ri-bar-chart-box-line"></i>
-                <span>Progress</span>
+                <span>进度</span>
             </button>
 
             <div class="progress-badge">
@@ -42,7 +42,7 @@
 
             <button class="primary-btn" id="randomBtn" type="button">
                 <i class="ri-login-box-line"></i>
-                <span>Sign In to Start</span>
+                <span>登录后开始</span>
             </button>
 
             <div id="authControls" class="auth-controls"></div>
@@ -52,12 +52,12 @@
     <div class="main-container">
         <aside class="sidebar">
             <div class="sidebar-header">
-                <div class="section-label">Table Of Contents</div>
+                <div class="section-label">题目目录</div>
                 <div class="filter-row">
-                    <button class="filter-btn active" data-filter="all" type="button">All</button>
-                    <button class="filter-btn" data-filter="todo" type="button">Todo</button>
-                    <button class="filter-btn" data-filter="attempted" type="button">Attempted</button>
-                    <button class="filter-btn" data-filter="solved" type="button">Solved</button>
+                    <button class="filter-btn active" data-filter="all" type="button">全部</button>
+                    <button class="filter-btn" data-filter="todo" type="button">未开始</button>
+                    <button class="filter-btn" data-filter="attempted" type="button">已尝试</button>
+                    <button class="filter-btn" data-filter="solved" type="button">已完成</button>
                 </div>
             </div>
             <div class="task-list" id="taskList"></div>
@@ -67,19 +67,19 @@
             <div class="empty-state" id="emptyState">
                 <i class="ri-door-lock-box-line"></i>
                 <div class="empty-state-copy">
-                    <h2>Register or sign in to start practicing</h2>
-                    <p>This server only exposes problems, solutions, drafts, and submissions to authenticated users.</p>
+                    <h2>注册或登录后开始练习</h2>
+                    <p>当前站点仅向已登录用户开放题目、题解、草稿保存和提交评测。</p>
                 </div>
             </div>
 
             <div class="problem-view hidden" id="problemView">
                 <div class="auth-banner hidden" id="authBanner">
                     <div>
-                        <strong>Account required:</strong> sign in before you start so drafts, solved status, and your last opened problem stay tied to your account.
+                        <strong>需要登录：</strong>登录后再开始，草稿、完成状态和上次打开的题目都会绑定到你的账号。
                     </div>
                     <button class="ghost-btn" id="authBannerBtn" type="button">
                         <i class="ri-user-add-line"></i>
-                        <span>Create Account</span>
+                        <span>注册账号</span>
                     </button>
                 </div>
 
@@ -87,12 +87,18 @@
                     <section class="workspace-panel description-panel">
                         <div class="panel-header">
                             <div>
-                                <div class="section-label">Problem</div>
+                                <div class="section-label">题目</div>
                                 <h1 class="panel-title" id="problemTitle">-</h1>
                             </div>
-                            <div class="problem-meta">
-                                <span class="task-difficulty" id="problemDifficulty">-</span>
-                                <span class="function-chip" id="problemFunction">-</span>
+                            <div class="problem-header-actions">
+                                <div class="problem-meta">
+                                    <span class="task-difficulty" id="problemDifficulty">-</span>
+                                    <span class="function-chip" id="problemFunction">-</span>
+                                </div>
+                                <button class="ghost-btn solution-reference-btn" id="solutionToggleBtn" type="button" disabled>
+                                    <i class="ri-book-open-line"></i>
+                                    <span>参考题解</span>
+                                </button>
                             </div>
                         </div>
 
@@ -100,7 +106,7 @@
                             <section class="detail-card hidden" id="signatureSection">
                                 <div class="detail-card-header">
                                     <i class="ri-code-line"></i>
-                                    <span>Signature</span>
+                                    <span>函数签名</span>
                                 </div>
                                 <pre class="mono-block" id="signatureCode"></pre>
                             </section>
@@ -108,7 +114,7 @@
                             <section class="detail-card hidden" id="exampleSection">
                                 <div class="detail-card-header detail-card-header-success">
                                     <i class="ri-terminal-box-line"></i>
-                                    <span>Example</span>
+                                    <span>示例</span>
                                 </div>
                                 <pre class="mono-block" id="exampleCode"></pre>
                             </section>
@@ -118,7 +124,7 @@
                             <section class="hint-card">
                                 <div class="detail-card-header detail-card-header-warn">
                                     <i class="ri-lightbulb-line"></i>
-                                    <span>Hint</span>
+                                    <span>提示</span>
                                 </div>
                                 <p id="hintContent"></p>
                             </section>
@@ -128,26 +134,22 @@
                     <section class="workspace-panel code-panel">
                         <div class="panel-header">
                             <div>
-                                <div class="section-label">Implementation</div>
-                                <div class="panel-title" id="editorTaskMeta">Start coding on the selected problem</div>
+                                <div class="section-label">实现</div>
+                                <div class="panel-title" id="editorTaskMeta">在所选题目上开始编码</div>
                             </div>
                             <div class="code-toolbar">
-                                <span class="status-pill" id="saveStatus">Select a task</span>
+                                <span class="status-pill" id="saveStatus">请选择题目</span>
                                 <button class="ghost-btn" id="resetBtn" type="button">
                                     <i class="ri-refresh-line"></i>
-                                    <span>Reset</span>
+                                    <span>重置</span>
                                 </button>
                                 <button class="ghost-btn" id="hintBtn" type="button">
                                     <i class="ri-lightbulb-line"></i>
-                                    <span>Hint</span>
-                                </button>
-                                <button class="ghost-btn" id="solutionToggleBtn" type="button" disabled>
-                                    <i class="ri-layout-right-2-line"></i>
-                                    <span>Show Solution</span>
+                                    <span>提示</span>
                                 </button>
                                 <button class="primary-btn" id="runBtn" type="button">
                                     <i class="ri-play-line"></i>
-                                    <span>Run Tests</span>
+                                    <span>运行测试</span>
                                 </button>
                             </div>
                         </div>
@@ -159,12 +161,12 @@
                         <section class="results-panel" id="resultsPanel">
                             <div class="results-header">
                                 <div>
-                                    <div class="section-label">Judge Result</div>
+                                    <div class="section-label">评测结果</div>
                                     <div class="results-title" id="resultsCount">-</div>
                                 </div>
                                 <div class="results-meta">
                                     <span id="resultsTime">-</span>
-                                    <button class="icon-btn" id="closeResultsBtn" type="button" aria-label="Close results">
+                                    <button class="icon-btn" id="closeResultsBtn" type="button" aria-label="关闭结果面板">
                                         <i class="ri-close-line"></i>
                                     </button>
                                 </div>
@@ -173,30 +175,33 @@
                         </section>
                     </section>
 
-                    <aside class="workspace-panel solution-panel" id="solutionPanel">
+                </div>
+
+                <div class="modal-overlay solution-modal-overlay" id="solutionModal">
+                    <aside class="workspace-panel solution-panel" id="solutionPanel" role="dialog" aria-modal="true" aria-labelledby="solutionModalTitle">
                         <div class="panel-header">
                             <div>
-                                <div class="section-label">Reference</div>
-                                <div class="panel-title">Solution</div>
+                                <div class="section-label">参考</div>
+                                <div class="panel-title" id="solutionModalTitle">题解</div>
                             </div>
-                            <button class="icon-btn" id="closeSolutionBtn" type="button" aria-label="Hide solution">
+                            <button class="icon-btn" id="closeSolutionBtn" type="button" aria-label="关闭题解">
                                 <i class="ri-close-line"></i>
                             </button>
                         </div>
 
                         <div class="panel-scroll">
                             <div class="solution-empty" id="solutionEmpty">
-                                <i class="ri-layout-right-line"></i>
-                                <p>The reference solution stays hidden until you choose to reveal it.</p>
+                                <i class="ri-book-open-line"></i>
+                                <p>参考题解会在你主动展开后显示。</p>
                             </div>
-                            <div class="loading-text hidden" id="solutionLoading">Loading solution...</div>
+                            <div class="loading-text hidden" id="solutionLoading">题解加载中...</div>
                             <div class="solution-content hidden" id="solutionContent">
                                 <section class="markdown-body" id="solutionMarkdown"></section>
                                 <section class="detail-card">
                                     <div class="detail-card-header">
                                         <i class="ri-code-s-slash-line"></i>
-                                        <span>Reference Code</span>
-                                        <button class="icon-btn copy-btn" id="copySolutionBtn" type="button" aria-label="Copy solution code">
+                                        <span>参考代码</span>
+                                        <button class="icon-btn copy-btn" id="copySolutionBtn" type="button" aria-label="复制题解代码">
                                             <i class="ri-file-copy-line"></i>
                                         </button>
                                     </div>
@@ -214,32 +219,32 @@
         <div class="modal auth-modal">
             <div class="modal-header">
                 <div>
-                    <div class="section-label" id="authModalModeLabel">Account</div>
-                    <div class="modal-title" id="authModalTitle">Sign In</div>
+                    <div class="section-label" id="authModalModeLabel">账号</div>
+                    <div class="modal-title" id="authModalTitle">登录</div>
                 </div>
-                <button class="icon-btn" id="authModalClose" type="button" aria-label="Close auth modal">
+                <button class="icon-btn" id="authModalClose" type="button" aria-label="关闭账号弹窗">
                     <i class="ri-close-line"></i>
                 </button>
             </div>
             <div class="modal-body">
                 <div class="tab-switch">
-                    <button class="tab-switch-btn active" data-auth-mode="login" type="button">Sign In</button>
-                    <button class="tab-switch-btn" data-auth-mode="register" type="button">Register</button>
+                    <button class="tab-switch-btn active" data-auth-mode="login" type="button">登录</button>
+                    <button class="tab-switch-btn" data-auth-mode="register" type="button">注册</button>
                 </div>
 
                 <form class="auth-form" id="authForm">
-                    <label class="field-label" for="authUsername">Username</label>
+                    <label class="field-label" for="authUsername">用户名</label>
                     <input class="field-input" id="authUsername" name="username" maxlength="32" autocomplete="username" required>
 
-                    <label class="field-label" for="authPassword">Password</label>
+                    <label class="field-label" for="authPassword">密码</label>
                     <input class="field-input" id="authPassword" name="password" type="password" minlength="8" autocomplete="current-password" required>
 
-                    <p class="form-help" id="authHelpText">Use your account to keep progress and drafts in sync across sessions.</p>
+                    <p class="form-help" id="authHelpText">登录后可在不同会话间同步进度与草稿。</p>
                     <div class="form-error hidden" id="authError"></div>
 
                     <button class="primary-btn auth-submit" id="authSubmitBtn" type="submit">
                         <i class="ri-login-box-line"></i>
-                        <span>Sign In</span>
+                        <span>登录</span>
                     </button>
                 </form>
             </div>
@@ -250,10 +255,10 @@
         <div class="modal">
             <div class="modal-header">
                 <div>
-                    <div class="section-label">Account Progress</div>
-                    <div class="modal-title">Progress Dashboard</div>
+                    <div class="section-label">账号进度</div>
+                    <div class="modal-title">进度面板</div>
                 </div>
-                <button class="icon-btn" id="progressModalClose" type="button" aria-label="Close progress modal">
+                <button class="icon-btn" id="progressModalClose" type="button" aria-label="关闭进度弹窗">
                     <i class="ri-close-line"></i>
                 </button>
             </div>
@@ -264,6 +269,6 @@
     <div class="toast-host" id="toastHost"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
-    <script defer src="/static/app.js"></script>
+    <script defer src="/static/app.js?v=20260904-ivory-layout"></script>
 </body>
 </html>
